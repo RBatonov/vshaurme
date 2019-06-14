@@ -61,19 +61,18 @@ def trends(period):
 @login_required
 @confirm_required
 def archive_photo(photo_id):
-    # photo = Photo.query.get_or_404(photo_id)
     photo = Photo.query.filter(Photo.id==photo_id).first()
     if current_user != photo.author:
-        flash('You cannot archive this photo')
+        flash(_('You cannot archive this photo'))
         redirect(url_for('.index'))
     if photo.archived:
         photo.archived = False
         db.session.commit()
-        flash('Photo dearchived')
+        flash(_('Photo dearchived'))
     else:
         photo.archived = True
         db.session.commit()
-        flash('Photo archived')
+        flash(_('Photo archived'))
     return redirect(url_for('.show_photo', photo_id=photo_id))
 
 
