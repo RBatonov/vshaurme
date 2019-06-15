@@ -1,5 +1,3 @@
-from threading import Thread
-
 from flask import current_app, render_template
 from flask_mail import Message
 from flask_babel import lazy_gettext as _l
@@ -7,17 +5,11 @@ from flask_babel import lazy_gettext as _l
 from vshaurme.extensions import mail
 
 
-def send_async_email(app, msg):
-    with app.app_context():
-        mail.send(msg)
-
-
 def send_mail(to, subject, template, **kwargs):
     msg = Message(subject, recipients=[to])
     msg.body = render_template(template + '.txt', **kwargs)
     msg.html = render_template(template + '.html', **kwargs)
-    app = current_app._get_current_object()
-    Thread(target=send_async_email, args=(app, msg)).start()
+    mail.send(msg)
 
 
 def send_confirm_email(user, token, to=None):

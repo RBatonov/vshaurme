@@ -33,8 +33,12 @@ def index():
     else:
         pagination = None
         photos = None
-    tags = Tag.query.join(Tag.photos).group_by(Tag.id).order_by(func.count(Photo.id).desc()).limit(10)
-    return render_template('main/index.html', pagination=pagination, photos=photos, tags=tags, Collect=Collect)
+    tags = Tag.query.join(Tag.photos) \
+                    .group_by(Tag.id) \
+                    .order_by(func.count(Photo.id) \
+                    .desc()).limit(10)
+    return render_template('main/index.html', pagination=pagination, 
+                            photos=photos, tags=tags, Collect=Collect)
 
 
 @main_bp.route('/explore')
@@ -93,7 +97,8 @@ def search():
     else:
         pagination = Photo.query.whooshee_search(q).paginate(page, per_page)
     results = pagination.items
-    return render_template('main/search.html', q=q, results=results, pagination=pagination, category=category)
+    return render_template('main/search.html', q=q, results=results, 
+                            pagination=pagination, category=category)
 
 
 @main_bp.route('/notifications')
@@ -108,7 +113,8 @@ def show_notifications():
 
     pagination = notifications.order_by(Notification.timestamp.desc()).paginate(page, per_page)
     notifications = pagination.items
-    return render_template('main/notifications.html', pagination=pagination, notifications=notifications)
+    return render_template('main/notifications.html', pagination=pagination, 
+                            notifications=notifications)
 
 
 @main_bp.route('/notification/read/<int:notification_id>', methods=['POST'])
@@ -169,9 +175,14 @@ def upload():
 @main_bp.route('/photo/<int:photo_id>')
 def show_photo(photo_id):
     photo = Photo.query.get_or_404(photo_id)
+    if photo.archived and photo.author != current_user:
+        flash('This foto is in archive, sorry')
+        return redirect(url_for('.index'))
     page = request.args.get('page', 1, type=int)
     per_page = current_app.config['VSHAURME_COMMENT_PER_PAGE']
-    pagination = Comment.query.with_parent(photo).order_by(Comment.timestamp.asc()).paginate(page, per_page)
+    pagination = Comment.query.with_parent(photo) \
+                              .order_by(Comment.timestamp \
+                              .asc()).paginate(page, per_page)
     comments = pagination.items
 
     comment_form = CommentForm()
@@ -187,7 +198,10 @@ def show_photo(photo_id):
 @main_bp.route('/photo/n/<int:photo_id>')
 def photo_next(photo_id):
     photo = Photo.query.get_or_404(photo_id)
-    photo_n = Photo.query.with_parent(photo.author).filter(Photo.id < photo_id).order_by(Photo.id.desc()).first()
+    photo_n = Photo.query.with_parent(photo.author) \
+                         .filter(Photo.id < photo_id) \
+                         .order_by(Photo.id.desc()) \
+                         .first()
 
     if photo_n is None:
         flash(_l('This is already the last one.'), 'info')
@@ -198,7 +212,9 @@ def photo_next(photo_id):
 @main_bp.route('/photo/p/<int:photo_id>')
 def photo_previous(photo_id):
     photo = Photo.query.get_or_404(photo_id)
-    photo_p = Photo.query.with_parent(photo.author).filter(Photo.id > photo_id).order_by(Photo.id.asc()).first()
+    photo_p = Photo.query.with_parent(photo.author) \
+                         .filter(Photo.id > photo_id) \
+                         .order_by(Photo.id.asc()).first()
 
     if photo_p is None:
         flash(_l('This is already the first one.'), 'info')
@@ -263,9 +279,12 @@ def show_collectors(photo_id):
     photo = Photo.query.get_or_404(photo_id)
     page = request.args.get('page', 1, type=int)
     per_page = current_app.config['VSHAURME_USER_PER_PAGE']
-    pagination = Collect.query.with_parent(photo).order_by(Collect.timestamp.asc()).paginate(page, per_page)
+    pagination = Collect.query.with_parent(photo) \
+                              .order_by(Collect.timestamp.asc()) \
+                              .paginate(page, per_page)
     collects = pagination.items
-    return render_template('main/collectors.html', collects=collects, photo=photo, pagination=pagination)
+    return render_template('main/collectors.html', collects=collects, 
+                            photo=photo, pagination=pagination)
 
 
 @main_bp.route('/photo/<int:photo_id>/description', methods=['POST'])
@@ -376,9 +395,15 @@ def delete_photo(photo_id):
     db.session.commit()
     flash(_l('Photo deleted.'), 'info')
 
-    photo_n = Photo.query.with_parent(photo.author).filter(Photo.id < photo_id).order_by(Photo.id.desc()).first()
+    photo_n = Photo.query.with_parent(photo.author) \
+                         .filter(Photo.id < photo_id) \
+                         .order_by(Photo.id.desc()) \
+                         .first()
     if photo_n is None:
-        photo_p = Photo.query.with_parent(photo.author).filter(Photo.id > photo_id).order_by(Photo.id.asc()).first()
+        photo_p = Photo.query.with_parent(photo.author) \
+                             .filter(Photo.id > photo_id) \
+                             .order_by(Photo.id.asc()) \
+                             .first()
         if photo_p is None:
             return redirect(url_for('user.index', username=photo.author.username))
         return redirect(url_for('.show_photo', photo_id=photo_p.id))
@@ -405,13 +430,16 @@ def show_tag(tag_id, order):
     page = request.args.get('page', 1, type=int)
     per_page = current_app.config['VSHAURME_PHOTO_PER_PAGE']
     order_rule = _l('time')
-    pagination = Photo.query.with_parent(tag).order_by(Photo.timestamp.desc()).paginate(page, per_page)
+    pagination = Photo.query.with_parent(tag) \
+                            .order_by(Photo.timestamp.desc()) \
+                            .paginate(page, per_page)
     photos = pagination.items
 
     if order == 'by_collects':
         photos.sort(key=lambda x: len(x.collectors), reverse=True)
         order_rule = _('collects')
-    return render_template('main/tag.html', tag=tag, pagination=pagination, photos=photos, order_rule=order_rule)
+    return render_template('main/tag.html', tag=tag, pagination=pagination, 
+                            photos=photos, order_rule=order_rule)
 
 
 @main_bp.route('/delete/tag/<int:photo_id>/<int:tag_id>', methods=['POST'])
